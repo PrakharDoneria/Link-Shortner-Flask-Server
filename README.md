@@ -31,7 +31,7 @@ This project provides a basic implementation of a URL shortening service using P
 1. Start the Flask application:
 
    ```bash
-   python app.py
+   python main.py
    ```
 
 2. Use the provided API endpoints to interact with the service.
