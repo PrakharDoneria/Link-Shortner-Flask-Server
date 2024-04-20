@@ -35,14 +35,10 @@ def create_url_table(connection):
         print("URL table created or already exists.")
     except mysql.connector.Error as err:
         print(f"Error: {err}")
-
-def shorten_url(original_url):
-    shortcode = hashlib.sha1(original_url.encode()).hexdigest()[:6]
-    return shortcode
-
-@app.route('/short', methods=['POST'])
+        
+@app.route('/short', methods=['GET'])
 def short():
-    long_url = request.json.get('long')
+    long_url = request.args.get('long')
 
     if not long_url:
         return jsonify({'error': 'Missing long URL parameter'}), 400
