@@ -1,15 +1,16 @@
 from flask import Flask, request, redirect, jsonify
 import hashlib
 import mysql.connector
+import os
 
 app = Flask(__name__)
 
 # MySQL connection configuration
 mysql_config = {
-    'host': '',
-    'user': '',
-    'password': '',  
-    'database': '',
+    'host': os.environ.get('MYSQL_HOST'),
+    'user': os.environ.get('MYSQL_USER'),
+    'password': os.environ.get('MYSQL_PASSWORD'), 
+    'database': os.environ.get('MYSQL_DATABASE'),
 }
 
 def connect_to_mysql():
@@ -35,7 +36,49 @@ def create_url_table(connection):
         print("URL table created or already exists.")
     except mysql.connector.Error as err:
         print(f"Error: {err}")
-        
+
+def shorten_url(original_url):
+    shortcode = hashlib.sha1(original_url.encode()).hexdigest()[:6]
+    return shortcode
+
+def get_short_url_from_db(original_url):
+    try:
+        connection = connect_to_mysql()
+        if not connection:
+            return None
+
+        cursor = connection.cursor()
+        cursor.execute("SELECT shortcode FROM urls WHERE original_url = %s", (original_url,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching short URL from database: {e}")
+        return None
+    finally:
+        if connection:
+            connection.close()
+
+def insert_url_into_db(original_url, shortcode):
+    try:
+        connection = connect_to_mysql()
+        if not connection:
+            return False
+
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO urls (original_url, shortcode) VALUES (%s, %s)", (original_url, shortcode))
+        connection.commit()
+        return True
+    except Exception as e:
+        print(f"Error inserting URL into database: {e}")
+        return False
+    finally:
+        if connection:
+            connection.close()
+
 @app.route('/short', methods=['GET'])
 def short():
     long_url = request.args.get('long')
@@ -44,30 +87,22 @@ def short():
         return jsonify({'error': 'Missing long URL parameter'}), 400
 
     try:
-        connection = connect_to_mysql()
-        if not connection:
-            return jsonify({'error': 'Failed to connect to the database.'}), 500
-
-        create_url_table(connection)
+        short_url = get_short_url_from_db(long_url)
+        if short_url:
+            return jsonify({'shortened_url': f'{request.host_url}{short_url}'}), 200
 
         shortcode = shorten_url(long_url)
 
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO urls (original_url, shortcode) VALUES (%s, %s)", (long_url, shortcode))
-        connection.commit()
-
-        return jsonify({'shortened_url': f'{request.host_url}{shortcode}'}), 200
+        if insert_url_into_db(long_url, shortcode):
+            return jsonify({'shortened_url': f'{request.host_url}{shortcode}'}), 200
+        else:
+            return jsonify({'error': 'Failed to create short URL'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    finally:
-        if connection:
-            connection.close()
-
 
 @app.route('/')
 def hello_world():
     return 'Hello Mate!'
-
 
 @app.route('/<shortcode>')
 def redirect_to_original(shortcode):
@@ -91,6 +126,5 @@ def redirect_to_original(shortcode):
         if connection:
             connection.close()
 
-
 if __name__ == '__main__':
-    app.run(port=5001)
+    app.run(port=5002)
