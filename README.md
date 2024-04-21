@@ -85,7 +85,7 @@ If you want to specify a different port, you can do so by passing the `--port` a
 python main.py --port 8080
 ```
 
-This will start the application on port 8080 instead of the default port 5000.
+This will start the application on port 8080 instead of the default port 5002.
 
 Remember to ensure that your MySQL database is running and properly configured before starting the Flask application.
 
