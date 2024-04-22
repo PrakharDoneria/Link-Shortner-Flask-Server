@@ -1,16 +1,15 @@
 from flask import Flask, request, redirect, jsonify
 import hashlib
 import mysql.connector
-import os
 
 app = Flask(__name__)
 
 # MySQL connection configuration
 mysql_config = {
-    'host': os.environ.get('MYSQL_HOST'),
-    'user': os.environ.get('MYSQL_USER'),
-    'password': os.environ.get('MYSQL_PASSWORD'), 
-    'database': os.environ.get('MYSQL_DATABASE'),
+    'host': 'prakhardoneria.mysql.pythonanywhere-services.com',
+    'user': 'prakhardoneria',
+    'password': 'Yash@2021',  # Replace with your MySQL password
+    'database': 'prakhardoneria$TGDB',
 }
 
 def connect_to_mysql():
@@ -86,6 +85,9 @@ def short():
     if not long_url:
         return jsonify({'error': 'Missing long URL parameter'}), 400
 
+    if "pythonanywhere" in long_url:
+        return jsonify({'error': 'Invalid URL'}), 400
+
     try:
         short_url = get_short_url_from_db(long_url)
         if short_url:
@@ -102,7 +104,7 @@ def short():
 
 @app.route('/')
 def hello_world():
-    return 'Hello Mate!'
+    return 'YAY ITS WORKING'
 
 @app.route('/<shortcode>')
 def redirect_to_original(shortcode):
@@ -127,4 +129,4 @@ def redirect_to_original(shortcode):
             connection.close()
 
 if __name__ == '__main__':
-    app.run(port=5002)
+    app.run(port=5003)
