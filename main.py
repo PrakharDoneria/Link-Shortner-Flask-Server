@@ -8,7 +8,7 @@ app = Flask(__name__)
 mysql_config = {
     'host': 'prakhardoneria.mysql.pythonanywhere-services.com',
     'user': 'prakhardoneria',
-    'password': 'Yash@2021',  # Replace with your MySQL password
+    'password': 'password',  # Replace with your MySQL password
     'database': 'prakhardoneria$TGDB',
 }
 
