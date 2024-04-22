@@ -1,6 +1,8 @@
 from flask import Flask, request, redirect, jsonify
 import hashlib
 import mysql.connector
+from urllib.parse import urlparse
+import requests
 
 app = Flask(__name__)
 
@@ -8,7 +10,7 @@ app = Flask(__name__)
 mysql_config = {
     'host': 'prakhardoneria.mysql.pythonanywhere-services.com',
     'user': 'prakhardoneria',
-    'password': 'password',  # Replace with your MySQL password
+    'password': '',  # Replace with your MySQL password
     'database': 'prakhardoneria$TGDB',
 }
 
@@ -78,6 +80,20 @@ def insert_url_into_db(original_url, shortcode):
         if connection:
             connection.close()
 
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+def is_website_reachable(url):
+    try:
+        response = requests.head(url, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
+
 @app.route('/short', methods=['GET'])
 def short():
     long_url = request.args.get('long')
@@ -85,8 +101,14 @@ def short():
     if not long_url:
         return jsonify({'error': 'Missing long URL parameter'}), 400
 
+    if not is_valid_url(long_url):
+        return jsonify({'error': 'Invalid URL format'}), 400
+
     if "pythonanywhere" in long_url:
         return jsonify({'error': 'Invalid URL'}), 400
+
+    if not is_website_reachable(long_url):
+        return jsonify({'error': 'URL is not reachable'}), 400
 
     try:
         short_url = get_short_url_from_db(long_url)
